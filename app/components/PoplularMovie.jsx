@@ -1,39 +1,96 @@
-import { View, Text, Image, Dimensions } from "react-native";
-import React from "react";
-import Carousel from "react-native-reanimated-carousel";
-import "../../global.css"; 
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  Linking,
+  Animated,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
+import React, { useRef } from "react";
+import "../../global.css";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
-const PopularMovie = ({ movieData, imageUrl }) => {
-  const renderItem = ({ item }) => {
+const PoplularMovie = ({ movieData, imageUrl }) => {
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const itemWidth = 100 + 20; 
+
+  const renderItem = ({ item, index }) => {
+    const inputRange = [
+      (index - 1) * itemWidth,
+      index * itemWidth,
+      (index + 1) * itemWidth,
+    ];
+
+    const scale = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.8, 1.2, 0.8],
+      extrapolate: "clamp",
+    });
+
+    const opacity = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.5, 1, 0.5],
+      extrapolate: "clamp",
+    });
+
     return (
-      <View className="flex-row justify-center gap items-center mb-[10px]">
-        {item.poster_path ? (
+      <Animated.View
+        style={{
+          margin: 10,
+          transform: [{ scale }],
+          opacity,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 3.84,
+          elevation: 5,
+        }}
+      >
+        <TouchableOpacity activeOpacity={0.8}
+         onPress={() => Linking.openURL(`https://www.themoviedb.org/movie/${item.id}`)}
+        >
           <Image
-            className="rounded-[8px] ml-[6px]"
             source={{ uri: `${imageUrl}${item.poster_path}` }}
-            style={{ width: width * 0.6, height: height * 0.4, 
-            borderRadius: 8 }}
+            style={{
+              width: 100,
+              height: 150,
+              borderRadius: 10,
+              resizeMode: "cover",
+            }}
           />
-        ) : (
-          <Text className="text-white">No Image Available</Text>
-        )}
-      </View>
+        </TouchableOpacity>
+        <Text className="text-white mt-2 mb-4 text-xs font-semibold">
+          {item.title?.length > 10
+            ? `${item.title.slice(0, 10)} ...`
+            : item.title || item.name}
+        </Text>
+      </Animated.View>
     );
   };
 
   return (
-    <View className="flex-1 justify-start items-center mt-[7px]">
-      <Carousel 
+    <View >
+      <Text className="text-2xl font-bold text-white mb-4">Trending</Text>
+      <FlatList
         data={movieData}
+        keyExtractor={(movie) => movie.id.toString()}
         renderItem={renderItem}
-        width={width}
-        height={height}
-        sliderW
+        horizontal
+        snapToInterval={itemWidth}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        showsHorizontalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
       />
     </View>
   );
 };
 
-export default PopularMovie;
+export default PoplularMovie;

@@ -10,27 +10,47 @@ import React, { useState, useEffect } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import "../global.css";
 import PopularMovie from "./components/PoplularMovie";
+import UpcomingMovie from "./components/UpcomingMovie";
 import axios from "axios";
 
 const HomePage = () => {
   const [search, setSearch] = useState(false);
   const [movieData, setMovieData] = useState([]);
+  const [popularMovies, setPopularMovies] = useState([]); 
   const [query, setQuery] = useState("");
 
   const apiKey = "73126c9f0bbb4db9d5f7b357b28f3592";
   const baseUrl = "https://api.themoviedb.org/3";
   const imageUrl = "https://image.tmdb.org/t/p/w500";
 
-  const movieSearchUrl = `${baseUrl}/search/movie?api_key=${apiKey}&query=${query}&language=en-US`;
+  useEffect(() => {
+
+    const fetchPopularMovies = async () => {
+      try {
+        const response = await axios.get(
+          `${baseUrl}/movie/popular?api_key=${apiKey}&language=en-US`
+        );
+        setPopularMovies(response.data.results);
+        setMovieData(response.data.results); 
+      } catch (error) {
+        console.error("Error fetching popular movies", error);
+      }
+    };
+
+    fetchPopularMovies();
+  }, []);
 
   useEffect(() => {
     if (query.trim() === "") {
+      setMovieData(popularMovies); // Reset to all movies when no search
       return;
     }
 
     const fetchMovieData = async () => {
       try {
-        const response = await axios.get(movieSearchUrl);
+        const response = await axios.get(
+          `${baseUrl}/search/movie?api_key=${apiKey}&query=${query}&language=en-US`
+        );
         setMovieData(response.data.results);
       } catch (error) {
         console.error("Error fetching movie data", error);
@@ -38,7 +58,7 @@ const HomePage = () => {
     };
 
     fetchMovieData();
-  }, [query]);
+  }, [query, popularMovies]); // Depend on popularMovies to reset when clearing search
 
   return (
     <ScrollView className="flex-1 bg-slate-700 px-[8px] pt-[12px]">
@@ -72,6 +92,7 @@ const HomePage = () => {
         />
       )}
       <PopularMovie movieData={movieData} imageUrl={imageUrl} />
+      <UpcomingMovie />
     </ScrollView>
   );
 };
